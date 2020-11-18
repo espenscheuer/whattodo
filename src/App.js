@@ -21,24 +21,17 @@ import { set } from 'date-fns';
 
 function App() {
 
-  const useStyles = makeStyles((theme) => ({
-    root: {
-      width: '100%',
-      maxWidth: 360,
-      backgroundColor: theme.palette.background.paper,
-    },
-  }));
-
   const [items2, setItems2] = useState({})
   const [task, setTask] = useState("")
   const [sort, setSort] = useState("date")
-  const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [edit, setEdit] = useState("")
+  const[editSect, setEditSect] = useState("")
   const[pop, setPop] = useState({"key":"djkslgjfdlskg", "text":"fdafdsafdsa"});
 
   useEffect(() => {
     setEdit(pop.text) 
+    setEditSect(pop.section)
   }, [pop])
 
 
@@ -58,31 +51,24 @@ function App() {
   useHotkeys('a', ()=>setSort("alpha"));
   useHotkeys('d', ()=>setSort("date"));
 
-
-  function changeDate(date, id){
-    fire.firestore().collection("data").doc(id).set({
-      due: date
-    }, { merge: true });
-  }
-
-  function changeText(text, id){
-    fire.firestore().collection("data").doc(id).set({
-      text: text
-    }, { merge: true });
-    setAnchorEl(null);
+  function change(text, id, attr){
+    var temp = {}
+    temp[attr]=text
+    if(attr == "section" && text == ""){
+      temp[attr] = "Inbox"
+    }
+    fire.firestore().collection("data").doc(id).set(
+      temp, { merge: true });
+    setAnchorEl(null)
   }
 
   function shouldSort(items){
     var allItems2 = []
     var curr = items
-    if(sort == "alpha") {
-      Object.keys(items).map(section => {
-        console.log('alpha')
+    Object.keys(items).map(section => {
+      if(sort == "alpha") {
         allItems2[section] = (curr[section].sort((a,b)=>a.text.localeCompare(b.text)))
-      })
-    } else if(sort=="date") {
-      Object.keys(items).map(section => {
-        console.log('date')
+      } else if(sort=="date") {
         allItems2[section] = (curr[section].sort((a,b)=> {
           if(!a.due){
             return (-1) 
@@ -91,9 +77,9 @@ function App() {
           } else {
             return(a.due.toDate() - b.due.toDate())
           }
-        }))
-      })
+      }))
     }
+    })
     setItems2(allItems2)
   }
 
@@ -178,32 +164,38 @@ function App() {
     });
   }
   return (
-    <div style ={{marginTop: 60, marginLeft: 60}}>
+    <div style ={{ paddingTop: 50, display: "flex", width: "100%", flexDirection :"column", alignItems : "center"}}>
       <Popover
         id={'pop'}
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
         transformOrigin={{
-          vertical: 23,
-          horizontal: 57, 
+          vertical: 25,
+          horizontal: 58, 
+        }}
+        PaperProps={{
+          style:{maxWidth: "65vw", width: "100%"}
         }}
       >
       <div> 
-        <List>
-            <ListItem key = {pop.key}>
+        <List style ={{maxWidth: "65vw", width: "100%"}}>
+            <ListItem key = {pop.key + '3'}>
               <Checkbox onClick = {()=>{deleteItem(pop.key)}}/>
               <ListItemText primary={
                 <TextField id="outlined-basic"
+                multiline={true}
+                fullWidth={true}
                 value={edit}
                 onChange={e => {setEdit(e.target.value)}}
                 onKeyDown = {(e)=>{
                   if(e.key == 'Enter'){
-                    changeText(edit, pop.key)
+                    change(edit, pop.key, "text")
                   }
                 }}
                 />     
               } secondary={
+                <div>
                 <MuiPickersUtilsProvider utils={DateFnsUtils}>
                 
                 <DatePicker
@@ -215,7 +207,7 @@ function App() {
                   value={pop.due ? pop.due.toDate() : null}
                   emptyLabel="whenever"
                   onChange={(date) => {
-                    changeDate(date, pop.key)}
+                    change(date, pop.key, "due")}
                   }
                   InputProps={{
                       disableUnderline: true,
@@ -228,38 +220,42 @@ function App() {
                   }}
                 />
                 
-            </MuiPickersUtilsProvider>  
+                </MuiPickersUtilsProvider>  
+                </div>
               
               }/>
             </ListItem>
           </List>
+          
         </div>
       </Popover>
-      <TextField id="outlined-basic" label="Enter Task" variant="outlined" 
-        value={task}
-        onChange={e => {setTask(e.target.value)}}
-        onKeyDown = {(e)=>{
-          if(e.key == 'Enter'){
-            addItem(task)
-            setTask('')
-          }
-        }}
-        />
-      
+      <div style ={{ maxWidth: "65vw", width: "100%", display: "flex", justifyContent: "flex-start"}}> 
+        <TextField id="outlined-basic" label="Enter Task" variant="outlined" 
+          style={{ width: 400, marginLeft: 16}}
+          value={task}
+          onChange={e => {setTask(e.target.value)}}
+          onKeyDown = {(e)=>{
+            if(e.key == 'Enter' && task != ''){
+              addItem(task)
+              setTask('')
+            }
+          }}
+          /> 
+      </div>
       {Object.keys(items2) && Object.keys(items2).map(section => {
         return(
-        <List className={classes.root} subheader={
-          <ListSubheader component="div" id="nested-list-subheader">
+        <List  style ={{maxWidth: "65vw", width: "100%"}} subheader={
+          <ListSubheader component="div" id="nested-list-subheader" onClick ={()=>console.log(section)}>
             {section}
           </ListSubheader>
         }>
           {items2[section].map(item => {
             return(
             <>
-            <ListItem key = {item.key}>
+            <ListItem divider = {true} key = {item.key}>
               <Checkbox onClick = {()=>{deleteItem(item.key)}}/>
               <ListItemText primary={
-                <Typography onClick={(event)=>{
+                <Typography style ={{width: "100%"}} onClick={(event)=>{
                   handleClick(event, item)
                   }
                 }>
@@ -277,7 +273,7 @@ function App() {
                   value={item.due ? item.due.toDate() : null}
                   emptyLabel="whenever"
                   onChange={(date) => {
-                    changeDate(date, item.key)}
+                      change(date, item.key, "due")}
                   }
                   InputProps={{
                       disableUnderline: true,
