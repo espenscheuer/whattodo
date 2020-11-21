@@ -13,11 +13,20 @@ import {
   MuiPickersUtilsProvider,
   DatePicker
 } from "@material-ui/pickers";
-import { makeStyles } from '@material-ui/core/styles';
-import FormControl from '@material-ui/core/FormControl';
 import Popover from '@material-ui/core/Popover';
-import Input from '@material-ui/core/Input';
-import { set } from 'date-fns';
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+
+
+
+//DELETE
+import RootRef from "@material-ui/core/RootRef";
+import InboxIcon from "@material-ui/icons/Inbox";
+import EditIcon from "@material-ui/icons/Edit";
+import {
+  ListItemIcon,
+  IconButton,
+  ListItemSecondaryAction
+} from "@material-ui/core";
 
 function App() {
 
@@ -28,6 +37,59 @@ function App() {
   const [edit, setEdit] = useState("")
   const[editSect, setEditSect] = useState("")
   const[pop, setPop] = useState({"key":"djkslgjfdlskg", "text":"fdafdsafdsa"});
+
+  const reorder = (section, startIndex, endIndex) => {
+    console.log(section)
+    const result = (items2[section]);
+    console.log('arrayfrom')
+    console.log(result)
+    const [removed] = result.splice(startIndex, 1);
+    console.log('splice1')
+    console.log(result)
+    result.splice(endIndex, 0, removed);
+    console.log('splice2')
+    console.log(result)
+  
+    return result;
+  };
+  //DELETE
+  function getItems(count) {
+  return(Array.from({ length: count }, (v, k) => k).map(k => ({
+    id: `item-${k}`,
+    primary: `item ${k}`,
+    secondary: k % 2 === 0 ? `Whatever for ${k}` : undefined
+  })))}
+  
+  function onDragEnd(result, section) {
+    // dropped outside the list
+    if (!result.destination) {
+      return;
+    }
+    const temp = reorder(
+      section,
+      result.source.index,
+      result.destination.index
+    );
+    console.log(temp)
+    setSort("custom")
+
+    setItems2(temp)
+  }
+
+  //STOP DELETE
+
+  const getItemStyle = (isDragging, draggableStyle) => ({
+    // styles we need to apply on draggables
+    ...draggableStyle,
+  
+    ...(isDragging && {
+      background: "rgb(235,235,235)"
+    })
+  });
+
+  const getListStyle = isDraggingOver => ({
+    //background: isDraggingOver ? 'lightblue' : 'lightgrey',
+  });
 
   useEffect(() => {
     setEdit(pop.text) 
@@ -46,8 +108,6 @@ function App() {
 
   const open = Boolean(anchorEl);
 
-
-  useHotkeys('b', () => console.log("b"));
   useHotkeys('a', ()=>setSort("alpha"));
   useHotkeys('d', ()=>setSort("date"));
 
@@ -63,30 +123,34 @@ function App() {
   }
 
   function shouldSort(items){
-    var allItems2 = []
-    var curr = items
-    Object.keys(items).map(section => {
-      if(sort == "alpha") {
-        allItems2[section] = (curr[section].sort((a,b)=>a.text.localeCompare(b.text)))
-      } else if(sort=="date") {
-        allItems2[section] = (curr[section].sort((a,b)=> {
-          if(!a.due){
-            return (-1) 
-          } else if(!b.due){
-            return(1)
-          } else {
-            return(a.due.toDate() - b.due.toDate())
-          }
-      }))
+    if(sort !== "custom"){
+      var allItems2 = []
+      var curr = items
+      Object.keys(items).map(section => {
+        if(sort == "alpha") {
+          allItems2[section] = (curr[section].sort((a,b)=>a.text.localeCompare(b.text)))
+        } else if(sort=="date") {
+          allItems2[section] = (curr[section].sort((a,b)=> {
+            if(!a.due){
+              return (-1) 
+            } else if(!b.due){
+              return(1)
+            } else {
+              return(a.due.toDate() - b.due.toDate())
+            }
+        }))
+      }
+      })
+      setItems2(allItems2)
     }
-    })
-    setItems2(allItems2)
   }
 
   useEffect(() => {
     if (Object.keys(items2)) {
       shouldSort(items2) 
-    }  
+    } 
+    console.log(sort) 
+    console.log(items2)
   }, [sort])
 
   useEffect(() => {
@@ -293,6 +357,89 @@ function App() {
           </>
           )
           })}
+          
+        </List>
+        )}
+      )}
+      <h1>
+        THE NEW SHIT BABYYYY
+      </h1>
+      {Object.keys(items2) && Object.keys(items2).map(section => {
+        return(
+        <List  style ={{maxWidth: "65vw", width: "100%"}} subheader={
+          <ListSubheader component="div" id="nested-list-subheader" onClick ={()=>console.log(section)}>
+            {section}
+          </ListSubheader>
+        }>
+          <DragDropContext onDragEnd={section => {onDragEnd(section)}}>
+            <Droppable droppableId="droppable">
+              {(provided, snapshot) => (
+                <RootRef rootRef={provided.innerRef}>
+                  <List style={getListStyle(snapshot.isDraggingOver)}>
+                  {items2[section].map((item, index) => {
+                      return(
+                      <Draggable key={item.key} draggableId={item.key} index={index}>
+                        {(provided, snapshot) => (
+                          <RootRef rootRef={provided.innerRef}>
+                          <ListItem
+                            divider = {true}
+                            ContainerComponent="li"
+                            ContainerProps={{ ref: provided.innerRef }}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            style={getItemStyle(
+                              snapshot.isDragging,
+                              provided.draggableProps.style
+                            )}
+                          >
+                            <Checkbox onClick = {()=>{deleteItem(item.key)}}/>
+                            <ListItemText primary={
+                              <Typography style ={{width: "100%"}} onClick={(event)=>{
+                                handleClick(event, item)
+                                }
+                              }>
+                                {item.text}
+                              </Typography>     
+                            } secondary={
+                              <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                              
+                              <DatePicker
+                                disableToolbar
+                                variant="inline"
+                                format="MM/dd/yyyy"
+                                margin='none'
+                                id={"date-picker-inline" + item.key}
+                                value={item.due ? item.due.toDate() : null}
+                                emptyLabel="whenever"
+                                onChange={(date) => {
+                                    change(date, item.key, "due")}
+                                }
+                                InputProps={{
+                                    disableUnderline: true,
+                                    style: {
+                                    color: "gray",
+                                    fontSize: 13,
+                                    disableUnderline: true,
+                                    width: 65,
+                                    }
+                                }}
+                              />
+                              
+                          </MuiPickersUtilsProvider>  
+                            
+                            }/>
+                          </ListItem>
+                          </RootRef>
+                        )}
+                      </Draggable>
+                      )
+                      })}
+                    {provided.placeholder}
+                  </List>
+                </RootRef>
+              )}
+            </Droppable>
+          </DragDropContext>
         </List>
         )}
       )}
