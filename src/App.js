@@ -13,11 +13,8 @@ import {
   MuiPickersUtilsProvider,
   DatePicker
 } from "@material-ui/pickers";
-import { makeStyles } from '@material-ui/core/styles';
-import FormControl from '@material-ui/core/FormControl';
+import Button from '@material-ui/core/Button';
 import Popover from '@material-ui/core/Popover';
-import Input from '@material-ui/core/Input';
-import { set } from 'date-fns';
 
 function App() {
 
@@ -25,13 +22,14 @@ function App() {
   const [task, setTask] = useState("")
   const [sort, setSort] = useState("date")
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [anchorEl2, setAnchorEl2] = React.useState(null);
+  const [editSect, setEditSect] = useState("garb")
+  const [originalSect, setOriginalSect] = useState("garb")
   const [edit, setEdit] = useState("")
-  const[editSect, setEditSect] = useState("")
   const[pop, setPop] = useState({"key":"djkslgjfdlskg", "text":"fdafdsafdsa"});
 
   useEffect(() => {
     setEdit(pop.text) 
-    setEditSect(pop.section)
   }, [pop])
 
 
@@ -40,14 +38,20 @@ function App() {
     setAnchorEl(event.currentTarget)
   };
 
+  function handleClick2(event, item){
+    setEditSect(item)
+    setOriginalSect(item)
+    setAnchorEl2(event.currentTarget)
+  };
+
   const handleClose = () => {
     setAnchorEl(null);
+    setAnchorEl2(null)
   };
 
   const open = Boolean(anchorEl);
+  const open2 = Boolean(anchorEl2);
 
-
-  useHotkeys('b', () => console.log("b"));
   useHotkeys('a', ()=>setSort("alpha"));
   useHotkeys('d', ()=>setSort("date"));
 
@@ -60,6 +64,13 @@ function App() {
     fire.firestore().collection("data").doc(id).set(
       temp, { merge: true });
     setAnchorEl(null)
+  }
+
+  function updateSect(section){
+    items2[originalSect].forEach((item)=>{
+      change(section, item.key, "section")
+    })
+    setAnchorEl2(null)
   }
 
   function shouldSort(items){
@@ -129,7 +140,6 @@ function App() {
   function deleteItem(id){
     setAnchorEl(null);
     fire.firestore().collection("data").doc(id).delete().then(function() {
-      console.log("Document successfully deleted!");
     }).catch(function(error) {
       console.error("Error removing document: ", error);
     });
@@ -157,7 +167,6 @@ function App() {
       section: section
     })
     .then(function() {
-        console.log("Document successfully written!");
     })
     .catch(function(error) {
         console.error("Error writing document: ", error);
@@ -165,6 +174,67 @@ function App() {
   }
   return (
     <div style ={{ paddingTop: 50, display: "flex", width: "100%", flexDirection :"column", alignItems : "center"}}>
+      {
+      //Edit Sect
+      }
+      <Popover
+        id={'popSect'}
+        open={open2}
+        anchorEl={anchorEl2}
+        onClose={handleClose}
+        transformOrigin={{
+          vertical: 10,
+          horizontal: 0, 
+        }}
+        PaperProps={{
+          style:{maxWidth: "65vw", width: "100%"}
+        }}
+      >
+      <div> 
+        <List style ={{maxWidth: "65vw", width: "100%"}}>
+            <ListItem key = {pop.key + '3'} style ={{paddingBottom: 0}}>
+              <ListItemText primary={
+                <TextField id="outlined-basic"
+                fullWidth={true}
+                value={editSect}
+                onChange={e => {setEditSect(e.target.value)}}
+                onKeyDown = {(e)=>{
+                  if(e.key == 'Enter'){
+                    updateSect(editSect)
+                  }
+                }}
+                />     
+              }/>
+            </ListItem>
+          </List>
+          <div style ={{textTransform: "none", marginLeft: 16, marginBottom: 12 }}>
+          <Button
+            color = "primary"
+            onClick ={()=>{
+              updateSect(editSect)
+            }}
+            size = "small"
+            style ={{textTransform: "lowercase"}}
+            variant="contained"
+          >
+            Save
+          </Button>
+          <Button
+            size = "small"
+            onClick ={()=>{
+              handleClose()
+            }}
+            style ={{textTransform: "lowercase"}}
+            color="default"
+          >
+            Cancel
+          </Button>
+          </div>    
+        </div>
+      </Popover>\
+      {
+      //Edit Items
+      }
       <Popover
         id={'pop'}
         open={open}
@@ -180,11 +250,10 @@ function App() {
       >
       <div> 
         <List style ={{maxWidth: "65vw", width: "100%"}}>
-            <ListItem key = {pop.key + '3'}>
+            <ListItem key = {pop.key + '3'} style ={{paddingBottom: 0}}>
               <Checkbox onClick = {()=>{deleteItem(pop.key)}}/>
               <ListItemText primary={
                 <TextField id="outlined-basic"
-                multiline={true}
                 fullWidth={true}
                 value={edit}
                 onChange={e => {setEdit(e.target.value)}}
@@ -221,12 +290,33 @@ function App() {
                 />
                 
                 </MuiPickersUtilsProvider>  
-                </div>
-              
+                </div>  
               }/>
             </ListItem>
           </List>
-          
+          <div style ={{textTransform: "none", marginLeft: 55, marginBottom: 12 }}>
+          <Button
+            color = "primary"
+            onClick ={()=>{
+              change(edit, pop.key, "text")
+            }}
+            size = "small"
+            style ={{textTransform: "lowercase"}}
+            variant="contained"
+          >
+            Save
+          </Button>
+          <Button
+            size = "small"
+            onClick ={()=>{
+              handleClose()
+            }}
+            style ={{textTransform: "lowercase"}}
+            color="default"
+          >
+            Cancel
+          </Button>
+          </div>    
         </div>
       </Popover>
       <div style ={{ maxWidth: "65vw", width: "100%", display: "flex", justifyContent: "flex-start"}}> 
@@ -245,7 +335,11 @@ function App() {
       {Object.keys(items2) && Object.keys(items2).map(section => {
         return(
         <List  style ={{maxWidth: "65vw", width: "100%"}} subheader={
-          <ListSubheader component="div" id="nested-list-subheader" onClick ={()=>console.log(section)}>
+          <ListSubheader component="div" id="nested-list-subheader" onClick ={(event)=>{
+              if(section !="Inbox"){
+                handleClick2(event,section)
+              }
+            }}>
             {section}
           </ListSubheader>
         }>
