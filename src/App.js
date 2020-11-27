@@ -15,6 +15,9 @@ import {
 } from "@material-ui/pickers";
 import Button from '@material-ui/core/Button';
 import Popover from '@material-ui/core/Popover';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+
 
 function App() {
 
@@ -27,6 +30,7 @@ function App() {
   const [originalSect, setOriginalSect] = useState("garb")
   const [edit, setEdit] = useState("")
   const[pop, setPop] = useState({"key":"djkslgjfdlskg", "text":"fdafdsafdsa"});
+  
 
   useEffect(() => {
     setEdit(pop.text) 
@@ -65,6 +69,11 @@ function App() {
       temp, { merge: true });
     setAnchorEl(null)
   }
+
+  const selectHandleChange = (event, key) => {
+    change(event.target.value, key, "section")
+    setAnchorEl(null) 
+  };
 
   function updateSect(section){
     items2[originalSect].forEach((item)=>{
@@ -241,7 +250,7 @@ function App() {
         anchorEl={anchorEl}
         onClose={handleClose}
         transformOrigin={{
-          vertical: 25,
+          vertical: 55,
           horizontal: 58, 
         }}
         PaperProps={{
@@ -250,6 +259,21 @@ function App() {
       >
       <div> 
         <List style ={{maxWidth: "65vw", width: "100%"}}>
+          <ListItem style ={{paddingTop : 0, paddingBottom : 0, marginLeft: 43, minWidth: 200}}>
+            <Select
+              style ={{fontSize: 13,width: 100, color: "gray"}}
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={pop.section}
+              onChange={(event)=> selectHandleChange(event, pop.key)}
+              inputProps={{ 'aria-label': 'Without label' }}
+            >
+              {Object.keys(items2) && Object.keys(items2).map(section => {
+                return(
+                <MenuItem style ={{fontSize: 13, color: "gray"}} value={section}>{section}</MenuItem>
+              )})}
+            </Select>
+            </ListItem>
             <ListItem key = {pop.key + '3'} style ={{paddingBottom: 0}}>
               <Checkbox onClick = {()=>{deleteItem(pop.key)}}/>
               <ListItemText primary={
@@ -292,6 +316,7 @@ function App() {
                 </MuiPickersUtilsProvider>  
                 </div>  
               }/>
+              
             </ListItem>
           </List>
           <div style ={{textTransform: "none", marginLeft: 55, marginBottom: 12 }}>
